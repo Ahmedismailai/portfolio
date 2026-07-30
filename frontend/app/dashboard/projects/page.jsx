@@ -24,8 +24,10 @@ export default function AddProjectPage() {
   const [editId, setEditId] = useState(null);
 
   const getProjects = async () => {
-    const { data } = await API.get("/projects");
-    setProjects(data.projects || []);
+    try {
+      const { data } = await API.get("/projects");
+      setProjects(data.projects || []);
+    } catch {}
   };
 
   useEffect(() => {
@@ -119,8 +121,13 @@ export default function AddProjectPage() {
   const deleteProject = async (id) => {
     if (!confirm("Delete this project?")) return;
 
-    await API.delete(`/projects/${id}`);
-    getProjects();
+    try {
+      await API.delete(`/projects/${id}`);
+      alert("Project deleted successfully");
+      getProjects();
+    } catch (error) {
+      alert(error.response?.data?.message || "Project delete failed");
+    }
   };
 
   return (
