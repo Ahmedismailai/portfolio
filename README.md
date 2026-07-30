@@ -81,3 +81,4 @@ npm run build
 - Set `FRONTEND_URL` to the exact frontend origins, comma-separated when more than one origin is required.
 - Use `GET /health` for process health and `GET /ready` for database readiness.
 - Rotate any MongoDB, Cloudinary, email, or JWT credentials that were ever shared in an archive or committed to source control.
+<!-- Trigger Vercel Auto-Deploy -->
