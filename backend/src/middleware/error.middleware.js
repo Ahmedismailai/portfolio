@@ -6,7 +6,9 @@ exports.notFound = (req, res, next) => {
 
 exports.errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || (res.statusCode >= 400 ? res.statusCode : 500);
-  let message = err.message || "Internal server error";
+  let message = err.message || (typeof err === "string" ? err : "") || "Internal server error";
+
+  console.error("EXPRESS ERROR HANDLER CAUGHT:", err);
 
   if (err.name === "CastError") {
     statusCode = 400;
@@ -27,9 +29,9 @@ exports.errorHandler = (err, req, res, next) => {
     message = "File is larger than 5 MB";
   }
 
-  if (statusCode >= 500) {
-    console.error(err);
-  }
-
-  res.status(statusCode).json({ success: false, message });
+  res.status(statusCode).json({
+    success: false,
+    message: message || "Error occurred",
+    detail: err.stack || String(err),
+  });
 };
