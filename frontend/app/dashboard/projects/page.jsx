@@ -93,11 +93,11 @@ export default function AddProjectPage() {
       }
 
       resetForm();
-      getProjects();
     } catch (error) {
       alert(error.response?.data?.message || "Project save failed");
     } finally {
       setLoading(false);
+      getProjects();
     }
   };
 
@@ -124,9 +124,10 @@ export default function AddProjectPage() {
     try {
       await API.delete(`/projects/${id}`);
       alert("Project deleted successfully");
-      getProjects();
     } catch (error) {
       alert(error.response?.data?.message || "Project delete failed");
+    } finally {
+      getProjects();
     }
   };
 
