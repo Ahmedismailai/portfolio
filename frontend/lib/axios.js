@@ -1,8 +1,10 @@
 import axios from "axios";
 
+export const API_BASE_URL = "/api/backend";
+
 // ALWAYS use same-origin proxy in browser - never hit Render directly
 const API = axios.create({
-  baseURL: "/api/backend",
+  baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 60000,
   headers: { Accept: "application/json" },
