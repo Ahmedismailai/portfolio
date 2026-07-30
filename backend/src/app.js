@@ -37,10 +37,22 @@ if (process.env.TRUST_PROXY) {
   app.set("trust proxy", Number.isNaN(trustProxy) ? process.env.TRUST_PROXY : trustProxy);
 }
 
-const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000")
-  .split(",")
-  .map((origin) => origin.trim().replace(/\/$/, ""))
-  .filter(Boolean);
+const defaultAllowed = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "https://portfolio-ai-rosy-eta.vercel.app",
+];
+
+const allowedOrigins = Array.from(
+  new Set([
+    ...defaultAllowed,
+    ...(process.env.FRONTEND_URL || "")
+      .split(",")
+      .map((origin) => origin.trim().replace(/\/$/, ""))
+      .filter(Boolean),
+  ]),
+);
 
 app.use(
   helmet({
@@ -50,17 +62,10 @@ app.use(
 app.use(compression());
 app.use(
   cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ""))) {
-        return callback(null, true);
-      }
-
-      const error = new Error("Origin is not allowed");
-      error.statusCode = 403;
-      return callback(error);
-    },
+    origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   }),
 );
 

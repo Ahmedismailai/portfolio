@@ -1,11 +1,9 @@
 const baseCookieOptions = () => {
-  const isProduction = process.env.NODE_ENV === "production";
-
   return {
     httpOnly: true,
     path: "/",
-    sameSite: isProduction ? "none" : "lax",
-    secure: isProduction,
+    sameSite: "none",
+    secure: true,
   };
 };
 
@@ -21,6 +19,7 @@ const sendToken = (user, statusCode, res) => {
     })
     .json({
       success: true,
+      token,
       user: {
         _id: user._id,
         name: user.name,

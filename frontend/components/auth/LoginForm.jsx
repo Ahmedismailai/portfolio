@@ -1,13 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-import API from "@/lib/axios";
-
 export default function LoginForm() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,27 +11,38 @@ export default function LoginForm() {
   const submitHandler = async (e) => {
     e.preventDefault();
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
     try {
       setLoading(true);
-      toast.loading("Logging in...", {
-        id: "login",
+      toast.loading("Authenticating...", { id: "login" });
+
+      const res = await fetch("/api/backend/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
       });
 
-      await API.post("/auth/login", {
-        email,
-        password,
-      });
+      const data = await res.json();
 
-      toast.success("Login successful", {
-        id: "login",
-      });
+      if (res.ok && data?.success) {
+        if (data.token) {
+          try {
+            localStorage.setItem("admin_token", data.token);
+          } catch {}
+        }
+        toast.success("Login successful! Redirecting...", { id: "login" });
+        window.location.href = "/dashboard";
+        return;
+      }
 
-      router.replace("/dashboard");
-      router.refresh();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed", {
-        id: "login",
-      });
+      toast.error(data?.message || "Invalid email or password", { id: "login" });
+    } catch (err) {
+      toast.error(err.message || "Network error. Please try again.", { id: "login" });
     } finally {
       setLoading(false);
     }

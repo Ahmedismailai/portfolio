@@ -235,18 +235,33 @@ export function HomeDataProvider({ children }) {
   useEffect(() => {
     let active = true;
 
+    // Load from localStorage cache immediately for 0ms instant rendering
+    try {
+      const cached = localStorage.getItem("portfolio_data_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === "object") {
+          setData(mergePortfolioData(parsed));
+        }
+      }
+    } catch {}
+
     const fetchData = (attempt = 1) => {
-      API.get("/home", { timeout: 4000 })
+      API.get("/home")
         .then(({ data: response }) => {
           if (!active) return;
           if (response?.data) {
-            setData(mergePortfolioData(response.data));
+            const merged = mergePortfolioData(response.data);
+            setData(merged);
+            try {
+              localStorage.setItem("portfolio_data_cache", JSON.stringify(response.data));
+            } catch {}
           }
         })
         .catch((requestError) => {
           if (!active) return;
-          if (attempt <= 1) {
-            setTimeout(() => fetchData(attempt + 1), 4000);
+          if (attempt <= 3) {
+            setTimeout(() => fetchData(attempt + 1), 3000);
           } else {
             setError(requestError.response?.data?.message || "Portfolio data could not be loaded");
           }
@@ -256,18 +271,10 @@ export function HomeDataProvider({ children }) {
         });
     };
 
-    // Defer network fetch until main thread finishes initial paint
-    const timer = setTimeout(() => {
-      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-        window.requestIdleCallback(() => fetchData());
-      } else {
-        fetchData();
-      }
-    }, 150);
+    fetchData();
 
     return () => {
       active = false;
-      clearTimeout(timer);
     };
   }, []);
 

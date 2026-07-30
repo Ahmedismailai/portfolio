@@ -15,9 +15,27 @@ export default function DashboardGuard({ children }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    const { data } = await API.get("/auth/me");
-    setUser(data.user);
-    return data.user;
+    try {
+      const { data } = await API.get("/auth/me");
+      if (data?.user) {
+        setUser(data.user);
+        return data.user;
+      }
+    } catch {
+      // Fallback: direct fetch to same-origin /api/backend/auth/me
+    }
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    const headers = { Accept: "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await fetch("/api/backend/auth/me", { headers });
+    const data = await res.json();
+    if (res.ok && data?.user) {
+      setUser(data.user);
+      return data.user;
+    }
+    throw new Error("Unauthorized");
   }, []);
 
   useEffect(() => {
