@@ -1,0 +1,8 @@
+{$CADDY_DOMAIN} {
+  encode zstd gzip
+
+  @uploads path /uploads/*
+  reverse_proxy @uploads backend:5000
+
+  reverse_proxy frontend:3000
+}
