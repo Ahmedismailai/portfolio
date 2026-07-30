@@ -78,8 +78,8 @@ exports.updateProject = asyncHandler(async (req, res) => {
   project.title = title || project.title;
   project.desc = desc || project.desc;
   project.tags = tags ? parseTags(tags) : project.tags;
-  project.live = live || project.live;
-  project.github = github || project.github;
+  project.live = live !== undefined ? live : project.live;
+  project.github = github !== undefined ? github : project.github;
   project.featured =
     featured !== undefined
       ? featured === "true" || featured === true
@@ -87,7 +87,11 @@ exports.updateProject = asyncHandler(async (req, res) => {
 
   if (req.file) {
     if (project.image?.public_id) {
-      await cloudinary.uploader.destroy(project.image.public_id);
+      try {
+        await cloudinary.uploader.destroy(project.image.public_id);
+      } catch (err) {
+        console.warn("Cloudinary destroy skipped:", err.message);
+      }
     }
 
     const result = await uploadToCloudinary(
@@ -125,7 +129,11 @@ exports.deleteProject = asyncHandler(async (req, res) => {
   const projectTitle = project.title;
 
   if (project.image?.public_id) {
-    await cloudinary.uploader.destroy(project.image.public_id);
+    try {
+      await cloudinary.uploader.destroy(project.image.public_id);
+    } catch (err) {
+      console.warn("Cloudinary destroy skipped:", err.message);
+    }
   }
 
   await project.deleteOne();

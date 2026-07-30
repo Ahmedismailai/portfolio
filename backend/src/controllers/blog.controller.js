@@ -15,7 +15,6 @@ const makeSlug = (title = "") =>
 
 const parseTags = (tags) => {
   if (!tags) return [];
-
   if (Array.isArray(tags)) return tags;
 
   try {
@@ -30,54 +29,25 @@ const parseTags = (tags) => {
 
 exports.getBlogs = asyncHandler(async (req, res) => {
   const blogs = await Blog.find().sort({ createdAt: -1 }).limit(200).lean();
-
-  res.json({
-    success: true,
-    blogs,
-  });
+  res.json({ success: true, blogs });
 });
 
 exports.getPublishedBlogs = asyncHandler(async (req, res) => {
-  const blogs = await Blog.find({ status: "published" })
-    .sort({ createdAt: -1 })
-    .limit(100)
-    .lean();
-
-  res.json({
-    success: true,
-    blogs,
-  });
+  const blogs = await Blog.find({ status: "published" }).sort({ createdAt: -1 }).limit(100).lean();
+  res.json({ success: true, blogs });
 });
 
 exports.getBlogBySlug = asyncHandler(async (req, res) => {
-  const blog = await Blog.findOne({
-    slug: req.params.slug,
-    status: "published",
-  }).lean();
-
+  const blog = await Blog.findOne({ slug: req.params.slug, status: "published" }).lean();
   if (!blog) {
     res.status(404);
     throw new Error("Blog not found");
   }
-
-  res.json({
-    success: true,
-    blog,
-  });
+  res.json({ success: true, blog });
 });
 
 exports.createBlog = asyncHandler(async (req, res) => {
-  const {
-    title,
-    excerpt,
-    desc,
-    description,
-    content,
-    category,
-    tags,
-    featured,
-    status,
-  } = req.body;
+  const { title, excerpt, desc, description, content, category, tags, featured, status } = req.body;
 
   if (!title) {
     res.status(400);
@@ -106,18 +76,11 @@ exports.createBlog = asyncHandler(async (req, res) => {
     count++;
   }
 
-  let coverImage = {
-    url: "",
-    public_id: "",
-  };
+  let coverImage = { url: "", public_id: "" };
 
   if (req.file) {
     const result = await uploadToCloudinary(req.file.buffer, "portfolio/blogs");
-
-    coverImage = {
-      url: result.secure_url,
-      public_id: result.public_id,
-    };
+    coverImage = { url: result.secure_url, public_id: result.public_id };
   }
 
   const blog = await Blog.create({
@@ -139,10 +102,7 @@ exports.createBlog = asyncHandler(async (req, res) => {
     details: blog.title,
   });
 
-  res.status(201).json({
-    success: true,
-    blog,
-  });
+  res.status(201).json({ success: true, blog });
 });
 
 exports.updateBlog = asyncHandler(async (req, res) => {
@@ -153,17 +113,7 @@ exports.updateBlog = asyncHandler(async (req, res) => {
     throw new Error("Blog not found");
   }
 
-  const {
-    title,
-    excerpt,
-    desc,
-    description,
-    content,
-    category,
-    tags,
-    featured,
-    status,
-  } = req.body;
+  const { title, excerpt, desc, description, content, category, tags, featured, status } = req.body;
 
   if (title && title !== blog.title) {
     const baseSlug = makeSlug(title);
@@ -183,17 +133,16 @@ exports.updateBlog = asyncHandler(async (req, res) => {
   blog.content = content || blog.content;
   blog.category = category || blog.category;
   blog.tags = tags ? parseTags(tags) : blog.tags;
-
-  blog.featured =
-    featured !== undefined
-      ? featured === "true" || featured === true
-      : blog.featured;
-
+  blog.featured = featured !== undefined ? featured === "true" || featured === true : blog.featured;
   blog.status = status || blog.status;
 
   if (req.file) {
     if (blog.coverImage?.public_id) {
-      await cloudinary.uploader.destroy(blog.coverImage.public_id);
+      try {
+        await cloudinary.uploader.destroy(blog.coverImage.public_id);
+      } catch (err) {
+        console.warn("Cloudinary destroy skipped:", err.message);
+      }
     }
 
     const result = await uploadToCloudinary(req.file.buffer, "portfolio/blogs");
@@ -213,10 +162,7 @@ exports.updateBlog = asyncHandler(async (req, res) => {
     details: blog.title,
   });
 
-  res.json({
-    success: true,
-    blog,
-  });
+  res.json({ success: true, blog });
 });
 
 exports.deleteBlog = asyncHandler(async (req, res) => {
@@ -230,7 +176,11 @@ exports.deleteBlog = asyncHandler(async (req, res) => {
   const blogTitle = blog.title;
 
   if (blog.coverImage?.public_id) {
-    await cloudinary.uploader.destroy(blog.coverImage.public_id);
+    try {
+      await cloudinary.uploader.destroy(blog.coverImage.public_id);
+    } catch (err) {
+      console.warn("Cloudinary destroy skipped:", err.message);
+    }
   }
 
   await blog.deleteOne();
@@ -242,8 +192,5 @@ exports.deleteBlog = asyncHandler(async (req, res) => {
     details: blogTitle,
   });
 
-  res.json({
-    success: true,
-    message: "Blog deleted successfully",
-  });
+  res.json({ success: true, message: "Blog deleted successfully" });
 });
