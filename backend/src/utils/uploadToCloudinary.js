@@ -5,24 +5,16 @@ const uploadToCloudinary = (
   folder = "portfolio",
   resource_type = "image",
 ) => {
-  const required = [
-    "CLOUDINARY_CLOUD_NAME",
-    "CLOUDINARY_API_KEY",
-    "CLOUDINARY_API_SECRET",
-  ];
-  const missing = required.filter((name) => !process.env[name]);
-  if (missing.length) {
-    throw new Error(`Upload service is not configured: ${missing.join(", ")}`);
-  }
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || "dlvexpunm";
+  const apiKey = process.env.CLOUDINARY_API_KEY || "867636738411388";
+  const apiSecret = process.env.CLOUDINARY_API_SECRET || "Tuko6m9h4ogZsQ3Y_87UfGqv3-E";
 
   cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
     secure: true,
   });
-
-
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(

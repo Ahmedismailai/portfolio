@@ -20,4 +20,16 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+API.interceptors.response.use((response) => {
+  const method = response.config?.method?.toLowerCase();
+  if (["post", "put", "patch", "delete"].includes(method)) {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("portfolio_data_cache");
+      } catch {}
+    }
+  }
+  return response;
+});
+
 export default API;
