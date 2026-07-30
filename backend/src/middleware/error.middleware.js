@@ -29,7 +29,6 @@ exports.errorHandler = (err, req, res, next) => {
 
   if (statusCode >= 500) {
     console.error(err);
-    if (process.env.NODE_ENV === "production") message = "Internal server error";
   }
 
   res.status(statusCode).json({ success: false, message });
