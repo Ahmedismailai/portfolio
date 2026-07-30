@@ -82,3 +82,4 @@ npm run build
 - Use `GET /health` for process health and `GET /ready` for database readiness.
 - Rotate any MongoDB, Cloudinary, email, or JWT credentials that were ever shared in an archive or committed to source control.
 <!-- Trigger Vercel Auto-Deploy -->
+<!-- Trigger Vercel rebuild with frontend root directory and env vars -->
