@@ -3,7 +3,7 @@ const cloudinary = require("cloudinary").v2;
 const uploadToCloudinary = (
   fileBuffer,
   folder = "portfolio",
-  resource_type = "auto",
+  resource_type = "image",
 ) => {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME || "dlvexpunm";
   const apiKey = process.env.CLOUDINARY_API_KEY || "867636738411388";
@@ -23,7 +23,12 @@ const uploadToCloudinary = (
         resource_type,
       },
       (error, result) => {
-        if (error) return reject(error);
+        if (error) {
+          console.error("Cloudinary upload_stream error:", error);
+          const err = new Error(error.message || "Cloudinary upload failed");
+          err.statusCode = 400;
+          return reject(err);
+        }
         resolve(result);
       },
     );
