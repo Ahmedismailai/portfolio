@@ -65,9 +65,13 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
 };
 
 userSchema.methods.getJwtToken = function () {
-  return jwt.sign({ id: this._id, role: this.role }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || "7d",
-  });
+  return jwt.sign(
+    { id: this._id, role: this.role },
+    process.env.JWT_SECRET || "supersecretportfoliojwtkey12345",
+    {
+      expiresIn: process.env.JWT_EXPIRE || "7d",
+    },
+  );
 };
 
 module.exports = mongoose.model("User", userSchema);

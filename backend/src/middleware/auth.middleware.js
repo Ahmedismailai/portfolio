@@ -2,6 +2,8 @@ const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/user.model");
 
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretportfoliojwtkey12345";
+
 exports.isAuthenticated = asyncHandler(async (req, res, next) => {
   let token = req.cookies?.token;
   if (!token && req.headers.authorization?.startsWith("Bearer ")) {
@@ -13,16 +15,21 @@ exports.isAuthenticated = asyncHandler(async (req, res, next) => {
     throw new Error("Please log in to access this resource");
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  const user = await User.findById(decoded.id);
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id);
 
-  if (!user) {
+    if (!user) {
+      res.status(401);
+      throw new Error("The account for this session no longer exists");
+    }
+
+    req.user = user;
+    next();
+  } catch (err) {
     res.status(401);
-    throw new Error("The account for this session no longer exists");
+    throw new Error(err.message || "Session is invalid or expired");
   }
-
-  req.user = user;
-  next();
 });
 
 exports.authorizeRoles = (...roles) => (req, res, next) => {
