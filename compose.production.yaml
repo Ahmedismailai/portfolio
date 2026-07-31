@@ -19,7 +19,6 @@ services:
       MONGO_URI: mongodb://mongodb:27017/portfolio
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: ${FRONTEND_URL}
-      BACKEND_PUBLIC_URL: ${FRONTEND_URL}
       TRUST_PROXY: 1
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
@@ -41,7 +40,6 @@ services:
     environment:
       NODE_ENV: production
       BACKEND_API_URL: http://backend:5000/api
-      NEXT_PUBLIC_API_URL: /api/backend
       NEXT_PUBLIC_SITE_URL: ${FRONTEND_URL}
     depends_on:
       backend:

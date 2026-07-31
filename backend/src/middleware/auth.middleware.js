@@ -1,8 +1,7 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/user.model");
-
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretportfoliojwtkey12345";
+const { getJwtSecret } = require("../config/auth");
 
 exports.isAuthenticated = asyncHandler(async (req, res, next) => {
   let token = req.cookies?.token;
@@ -16,7 +15,7 @@ exports.isAuthenticated = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
     const user = await User.findById(decoded.id);
 
     if (!user) {
@@ -26,9 +25,9 @@ exports.isAuthenticated = asyncHandler(async (req, res, next) => {
 
     req.user = user;
     next();
-  } catch (err) {
+  } catch {
     res.status(401);
-    throw new Error(err.message || "Session is invalid or expired");
+    throw new Error("Session is invalid or expired");
   }
 });
 

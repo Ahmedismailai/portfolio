@@ -29,7 +29,6 @@ export default function DashboardBlogsPage() {
       const { data } = await API.get("/blogs");
       setBlogs(data.blogs || []);
     } catch (error) {
-      console.log(error);
       alert(error.response?.data?.message || "Failed to load blogs");
     }
   };
@@ -95,7 +94,6 @@ export default function DashboardBlogsPage() {
       setEditId(null);
       getBlogs();
     } catch (error) {
-      console.log(error);
       alert(error.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);
@@ -126,7 +124,6 @@ export default function DashboardBlogsPage() {
       await API.delete(`/blogs/${id}`);
       getBlogs();
     } catch (error) {
-      console.log(error);
       alert(error.response?.data?.message || "Delete failed");
     }
   };
@@ -217,7 +214,7 @@ export default function DashboardBlogsPage() {
 
         <input
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif"
           onChange={imageHandler}
           className="rounded-2xl bg-white/5 p-4"
         />

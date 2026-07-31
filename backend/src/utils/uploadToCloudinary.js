@@ -1,32 +1,29 @@
-const cloudinary = require("cloudinary").v2;
+const { configureCloudinary } = require("../config/cloudinary");
 
 const uploadToCloudinary = (
   fileBuffer,
   folder = "portfolio",
   resource_type = "image",
 ) => {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || "dlvexpunm";
-  const apiKey = process.env.CLOUDINARY_API_KEY || "867636738411388";
-  const apiSecret = process.env.CLOUDINARY_API_SECRET || "Tuko6m9h4ogZsQ3Y_87UfGqv3-E";
-
-  cloudinary.config({
-    cloud_name: cloudName,
-    api_key: apiKey,
-    api_secret: apiSecret,
-    secure: true,
-  });
+  if (!Buffer.isBuffer(fileBuffer) || fileBuffer.length === 0) {
+    const error = new Error("The uploaded file is empty");
+    error.statusCode = 400;
+    throw error;
+  }
 
   return new Promise((resolve, reject) => {
+    const cloudinary = configureCloudinary();
     const stream = cloudinary.uploader.upload_stream(
       {
         folder,
         resource_type,
+        overwrite: false,
+        unique_filename: true,
       },
       (error, result) => {
         if (error) {
-          console.error("Cloudinary upload_stream error:", error);
-          const err = new Error(error.message || "Cloudinary upload failed");
-          err.statusCode = 400;
+          const err = new Error("Image upload failed");
+          err.statusCode = 502;
           return reject(err);
         }
         resolve(result);

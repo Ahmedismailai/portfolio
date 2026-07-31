@@ -14,7 +14,7 @@ const {
   authorizeRoles,
 } = require("../middleware/auth.middleware");
 
-const upload = require("../middleware/upload.middleware");
+const { imageUpload } = require("../middleware/upload.middleware");
 
 const router = express.Router();
 
@@ -32,7 +32,7 @@ router.put(
   "/profile",
   isAuthenticated,
   authorizeRoles("admin"),
-  upload.single("avatar"),
+  imageUpload.single("avatar"),
   updateProfile,
 );
 

@@ -212,7 +212,7 @@ export default function AddProjectPage() {
 
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               onChange={imageHandler}
               className="hidden"
             />

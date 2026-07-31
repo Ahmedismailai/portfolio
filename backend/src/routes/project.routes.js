@@ -6,7 +6,7 @@ const {
   deleteProject,
 } = require("../controllers/project.controller");
 
-const upload = require("../middleware/upload.middleware");
+const { imageUpload } = require("../middleware/upload.middleware");
 const {
   isAuthenticated,
   authorizeRoles,
@@ -20,7 +20,7 @@ router.post(
   "/",
   isAuthenticated,
   authorizeRoles("admin"),
-  upload.single("image"),
+  imageUpload.single("image"),
   createProject,
 );
 
@@ -28,7 +28,7 @@ router.put(
   "/:id",
   isAuthenticated,
   authorizeRoles("admin"),
-  upload.single("image"),
+  imageUpload.single("image"),
   updateProject,
 );
 

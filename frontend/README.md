@@ -13,4 +13,4 @@ npm run build
 npm start
 ```
 
-Set `BACKEND_API_URL` to the backend URL including `/api`, keep `NEXT_PUBLIC_API_URL=/api/backend`, and set `NEXT_PUBLIC_SITE_URL` to the public frontend origin. The built-in API bridge keeps login cookies same-origin while forwarding requests to Express. See the root README for full setup and deployment guidance.
+Set `BACKEND_API_URL` to the backend URL including `/api` and set `NEXT_PUBLIC_SITE_URL` to the public frontend origin. The built-in `/api/backend` bridge keeps login cookies same-origin while forwarding requests to Express. See the root README for full setup and deployment guidance.

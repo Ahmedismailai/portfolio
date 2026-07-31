@@ -16,11 +16,8 @@ export default function DashboardMessagesPage() {
       setError("");
 
       const { data } = await API.get("/contact");
-      console.log("CONTACT MESSAGES:", data);
-
       setMessages(data.messages || []);
     } catch (error) {
-      console.log(error.response?.data?.message || error.message);
       setError(error.response?.data?.message || error.message);
     } finally {
       setLoading(false);

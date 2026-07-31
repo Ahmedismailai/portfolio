@@ -44,9 +44,7 @@ export default function AddProjectPage() {
     formData.append("github", form.github);
     formData.append("image", image);
 
-    await API.post("/projects", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    await API.post("/projects", formData);
 
     router.push("/dashboard/projects");
   };
@@ -93,7 +91,7 @@ export default function AddProjectPage() {
 
         <input
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif"
           onChange={imageHandler}
           className="w-full rounded-2xl bg-white/5 p-4"
         />

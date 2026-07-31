@@ -39,14 +39,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  let apiOrigin = "";
-  try {
-    apiOrigin = apiUrl ? new URL(apiUrl).origin : "";
-  } catch {
-    apiOrigin = "";
-  }
-
   return (
     <html lang="en" className="dark" data-theme="dark" suppressHydrationWarning>
       <head>
@@ -55,7 +47,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             __html: `try { const theme = localStorage.getItem('portfolio-theme'); if (theme === 'light' || theme === 'dark') { document.documentElement.classList.toggle('dark', theme === 'dark'); document.documentElement.dataset.theme = theme; document.documentElement.style.colorScheme = theme; } } catch {}`,
           }}
         />
-        {apiOrigin && <link rel="preconnect" href={apiOrigin} crossOrigin="anonymous" />}
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />

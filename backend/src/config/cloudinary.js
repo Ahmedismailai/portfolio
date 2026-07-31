@@ -1,9 +1,30 @@
 const cloudinary = require("cloudinary").v2;
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "dlvexpunm",
-  api_key: process.env.CLOUDINARY_API_KEY || "867636738411388",
-  api_secret: process.env.CLOUDINARY_API_SECRET || "Tuko6m9h4ogZsQ3Y_87UfGqv3-E",
-});
+const requiredVariables = [
+  "CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+];
 
-module.exports = cloudinary;
+const configureCloudinary = () => {
+  const missing = requiredVariables.filter((name) => !process.env[name]?.trim());
+
+  if (missing.length) {
+    const error = new Error(
+      `Image storage is not configured. Missing: ${missing.join(", ")}`,
+    );
+    error.statusCode = 503;
+    throw error;
+  }
+
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+
+  return cloudinary;
+};
+
+module.exports = { cloudinary, configureCloudinary };

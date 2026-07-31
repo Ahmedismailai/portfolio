@@ -8,8 +8,6 @@ exports.errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || (res.statusCode >= 400 ? res.statusCode : 500);
   let message = err.message || (typeof err === "string" ? err : "") || "Internal server error";
 
-  console.error("EXPRESS ERROR HANDLER CAUGHT:", err);
-
   if (err.name === "CastError") {
     statusCode = 400;
     message = "Invalid resource identifier";
@@ -27,11 +25,20 @@ exports.errorHandler = (err, req, res, next) => {
   } else if (err.code === "LIMIT_FILE_SIZE") {
     statusCode = 400;
     message = "File is larger than 5 MB";
+  } else if (err.code === "LIMIT_UNEXPECTED_FILE") {
+    statusCode = 400;
+    message = "Unexpected upload field";
+  }
+
+  if (process.env.NODE_ENV !== "test") {
+    console.error(`${req.method} ${req.originalUrl} ${statusCode}: ${message}`);
+    if (process.env.NODE_ENV !== "production" && err.stack) {
+      console.error(err.stack);
+    }
   }
 
   res.status(statusCode).json({
     success: false,
     message: message || "Error occurred",
-    detail: err.stack || String(err),
   });
 };

@@ -30,11 +30,6 @@ export default function LoginForm() {
       const data = await res.json();
 
       if (res.ok && data?.success) {
-        if (data.token) {
-          try {
-            localStorage.setItem("admin_token", data.token);
-          } catch {}
-        }
         toast.success("Login successful! Redirecting...", { id: "login" });
         window.location.href = "/dashboard";
         return;

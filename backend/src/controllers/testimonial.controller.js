@@ -1,7 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const Testimonial = require("../models/testimonial.model");
-const cloudinary = require("../config/cloudinary");
 const uploadToCloudinary = require("../utils/uploadToCloudinary");
+const {
+  replaceCloudinaryAsset,
+  safelyDestroyAsset,
+} = require("../utils/replaceCloudinaryAsset");
 
 exports.getTestimonials = asyncHandler(async (req, res) => {
   const testimonials = await Testimonial.find().sort({ createdAt: -1 }).limit(100).lean();
@@ -62,22 +65,20 @@ exports.updateTestimonial = asyncHandler(async (req, res) => {
   testimonial.rating = rating || testimonial.rating;
 
   if (req.file) {
-    if (testimonial.image?.public_id) {
-      await cloudinary.uploader.destroy(testimonial.image.public_id);
-    }
-
-    const result = await uploadToCloudinary(
-      req.file.buffer,
-      "portfolio/testimonials",
-    );
-
-    testimonial.image = {
-      url: result.secure_url,
-      public_id: result.public_id,
-    };
+    const previousAsset =
+      testimonial.image?.toObject?.() || testimonial.image;
+    await replaceCloudinaryAsset({
+      fileBuffer: req.file.buffer,
+      folder: "portfolio/testimonials",
+      previousAsset,
+      persistAsset: async (nextAsset) => {
+        testimonial.image = nextAsset;
+        await testimonial.save();
+      },
+    });
+  } else {
+    await testimonial.save();
   }
-
-  await testimonial.save();
 
   res.json({
     success: true,
@@ -93,11 +94,8 @@ exports.deleteTestimonial = asyncHandler(async (req, res) => {
     throw new Error("Testimonial not found");
   }
 
-  if (testimonial.image?.public_id) {
-    await cloudinary.uploader.destroy(testimonial.image.public_id);
-  }
-
   await testimonial.deleteOne();
+  await safelyDestroyAsset(testimonial.image?.public_id);
 
   res.json({
     success: true,

@@ -41,13 +41,16 @@ The frontend runs at `http://localhost:3000` and the API at `http://localhost:50
 
 ## Environment
 
-Backend requires `MONGO_URI`, `JWT_SECRET`, `FRONTEND_URL`, and `BACKEND_PUBLIC_URL`. Cloudinary variables are required for production uploads. Email variables are optional. On a reverse-proxy host, set `TRUST_PROXY=1`.
+Backend requires `MONGO_URI`, `JWT_SECRET`, and `FRONTEND_URL`. Cloudinary variables are required for uploads. Email variables are optional. On a reverse-proxy host, set `TRUST_PROXY=1`.
 
 Frontend requires:
 
 - `BACKEND_API_URL`, containing the backend URL including `/api` (server-only)
-- `NEXT_PUBLIC_API_URL=/api/backend`, keeping browser requests and auth cookies same-origin
 - `NEXT_PUBLIC_SITE_URL`, containing the public site origin
+
+Browser API requests always use the same-origin `/api/backend` bridge, so admin
+sessions stay in an HTTP-only cookie and no backend URL or token is exposed to
+client-side JavaScript.
 
 Never commit `.env` files. Both apps include safe `.env.example` templates.
 
@@ -77,7 +80,7 @@ npm run build
 
 - Deploy `backend/` to a Node host, run `npm run seed` once, then `npm start`.
 - Deploy `frontend/` to Vercel or another Next.js host and run `npm run build` then `npm start`.
-- Set frontend `BACKEND_API_URL` to the deployed API URL while leaving `NEXT_PUBLIC_API_URL=/api/backend`.
+- Set frontend `BACKEND_API_URL` to the deployed API URL.
 - Set `FRONTEND_URL` to the exact frontend origins, comma-separated when more than one origin is required.
 - Use `GET /health` for process health and `GET /ready` for database readiness.
 - Rotate any MongoDB, Cloudinary, email, or JWT credentials that were ever shared in an archive or committed to source control.

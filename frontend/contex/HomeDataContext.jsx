@@ -1,7 +1,17 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import API from "@/lib/axios";
+
+const CACHE_KEY = "portfolio_data_cache";
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 export const defaultPortfolioData = {
   setting: {
@@ -59,21 +69,30 @@ const HomeDataContext = createContext({ data: defaultPortfolioData, loading: fal
 
 export function HomeDataProvider({ children }) {
   const [data, setData] = useState(defaultPortfolioData);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchData = async (bypassCache = false) => {
+  const fetchData = useCallback(async (bypassCache = false) => {
+    let hasFreshCache = false;
+
     try {
       if (!bypassCache) {
-        const cached = localStorage.getItem("portfolio_data_cache");
+        const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (parsed && typeof parsed === "object") {
-            setData(mergePortfolioData(parsed));
+          if (
+            parsed?.data &&
+            Date.now() - Number(parsed.cachedAt) < CACHE_TTL_MS
+          ) {
+            setData(mergePortfolioData(parsed.data));
+            hasFreshCache = true;
           }
         }
       }
     } catch {}
+
+    if (!hasFreshCache && !bypassCache) setLoading(true);
+    setError("");
 
     try {
       const { data: response } = await API.get("/home");
@@ -81,7 +100,10 @@ export function HomeDataProvider({ children }) {
         const merged = mergePortfolioData(response.data);
         setData(merged);
         try {
-          localStorage.setItem("portfolio_data_cache", JSON.stringify(response.data));
+          localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({ data: response.data, cachedAt: Date.now() }),
+          );
         } catch {}
       }
     } catch (requestError) {
@@ -89,20 +111,33 @@ export function HomeDataProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
 
-  const refetch = () => {
+    const handleInvalidation = () => fetchData(true);
+    window.addEventListener("portfolio:data-invalidated", handleInvalidation);
+
+    return () => {
+      window.removeEventListener(
+        "portfolio:data-invalidated",
+        handleInvalidation,
+      );
+    };
+  }, [fetchData]);
+
+  const refetch = useCallback(() => {
     try {
-      localStorage.removeItem("portfolio_data_cache");
+      localStorage.removeItem(CACHE_KEY);
     } catch {}
     fetchData(true);
-  };
+  }, [fetchData]);
 
-  const value = useMemo(() => ({ data, loading, error, refetch }), [data, loading, error]);
+  const value = useMemo(
+    () => ({ data, loading, error, refetch }),
+    [data, loading, error, refetch],
+  );
   return <HomeDataContext.Provider value={value}>{children}</HomeDataContext.Provider>;
 }
 

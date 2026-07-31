@@ -1,4 +1,5 @@
-const rawApiUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const rawApiUrl =
+  process.env.BACKEND_API_URL || "http://localhost:5000/api";
 const API_BASE_URL = (() => {
   const value = rawApiUrl.replace(/\/$/, "");
   if (/^https?:\/\//.test(value)) return value;

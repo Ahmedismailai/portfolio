@@ -10,16 +10,6 @@ const API = axios.create({
   headers: { Accept: "application/json" },
 });
 
-API.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("admin_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
-
 API.interceptors.response.use((response) => {
   const method = response.config?.method?.toLowerCase();
   if (["post", "put", "patch", "delete"].includes(method)) {
@@ -27,6 +17,7 @@ API.interceptors.response.use((response) => {
       try {
         localStorage.removeItem("portfolio_data_cache");
       } catch {}
+      window.dispatchEvent(new Event("portfolio:data-invalidated"));
     }
   }
   return response;

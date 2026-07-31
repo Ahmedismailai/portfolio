@@ -92,11 +92,7 @@ export default function EditProjectPage() {
         formData.append("image", image);
       }
 
-      await API.put(`/projects/${id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      await API.put(`/projects/${id}`, formData);
 
       router.push("/dashboard/projects");
     } catch (error) {
@@ -186,7 +182,7 @@ export default function EditProjectPage() {
 
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               onChange={imageHandler}
               className="hidden"
             />

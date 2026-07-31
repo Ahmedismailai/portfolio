@@ -1,7 +1,15 @@
 const asyncHandler = require("express-async-handler");
 const Blog = require("../models/blog.model");
-const cloudinary = require("../config/cloudinary");
 const uploadToCloudinary = require("../utils/uploadToCloudinary");
+const {
+  replaceCloudinaryAsset,
+  safelyDestroyAsset,
+} = require("../utils/replaceCloudinaryAsset");
+const {
+  cleanText,
+  parseBoolean,
+  parseTags,
+} = require("../utils/contentFields");
 const logActivity = require("../utils/logActivity");
 
 const makeSlug = (title = "") =>
@@ -12,20 +20,6 @@ const makeSlug = (title = "") =>
     .replace(/[^\w\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
-
-const parseTags = (tags) => {
-  if (!tags) return [];
-  if (Array.isArray(tags)) return tags;
-
-  try {
-    return JSON.parse(tags);
-  } catch {
-    return tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-  }
-};
 
 exports.getBlogs = asyncHandler(async (req, res) => {
   const blogs = await Blog.find().sort({ createdAt: -1 }).limit(200).lean();
@@ -83,17 +77,23 @@ exports.createBlog = asyncHandler(async (req, res) => {
     coverImage = { url: result.secure_url, public_id: result.public_id };
   }
 
-  const blog = await Blog.create({
-    title,
-    slug,
-    excerpt: finalExcerpt,
-    content: finalContent,
-    category: category || "Web Development",
-    tags: parseTags(tags),
-    featured: featured === "true" || featured === true,
-    status: status || "published",
-    coverImage,
-  });
+  let blog;
+  try {
+    blog = await Blog.create({
+      title: cleanText(title),
+      slug,
+      excerpt: cleanText(finalExcerpt),
+      content: cleanText(finalContent),
+      category: cleanText(category) || "Web Development",
+      tags: parseTags(tags),
+      featured: parseBoolean(featured),
+      status: cleanText(status) || "published",
+      coverImage,
+    });
+  } catch (error) {
+    await safelyDestroyAsset(coverImage.public_id);
+    throw error;
+  }
 
   await logActivity({
     action: "CREATE_BLOG",
@@ -125,35 +125,33 @@ exports.updateBlog = asyncHandler(async (req, res) => {
       count++;
     }
 
-    blog.title = title;
+    blog.title = cleanText(title);
     blog.slug = slug;
   }
 
-  blog.excerpt = excerpt || desc || description || blog.excerpt;
-  blog.content = content || blog.content;
-  blog.category = category || blog.category;
-  blog.tags = tags ? parseTags(tags) : blog.tags;
-  blog.featured = featured !== undefined ? featured === "true" || featured === true : blog.featured;
-  blog.status = status || blog.status;
+  const nextExcerpt = excerpt ?? desc ?? description;
+  if (nextExcerpt !== undefined) blog.excerpt = cleanText(nextExcerpt);
+  if (content !== undefined) blog.content = cleanText(content);
+  if (category !== undefined) blog.category = cleanText(category);
+  if (tags !== undefined) blog.tags = parseTags(tags);
+  if (featured !== undefined) blog.featured = parseBoolean(featured);
+  if (status !== undefined) blog.status = cleanText(status);
 
   if (req.file) {
-    if (blog.coverImage?.public_id) {
-      try {
-        await cloudinary.uploader.destroy(blog.coverImage.public_id);
-      } catch (err) {
-        console.warn("Cloudinary destroy skipped:", err.message);
-      }
-    }
-
-    const result = await uploadToCloudinary(req.file.buffer, "portfolio/blogs");
-
-    blog.coverImage = {
-      url: result.secure_url,
-      public_id: result.public_id,
-    };
+    const previousAsset =
+      blog.coverImage?.toObject?.() || blog.coverImage;
+    await replaceCloudinaryAsset({
+      fileBuffer: req.file.buffer,
+      folder: "portfolio/blogs",
+      previousAsset,
+      persistAsset: async (nextAsset) => {
+        blog.coverImage = nextAsset;
+        await blog.save();
+      },
+    });
+  } else {
+    await blog.save();
   }
-
-  await blog.save();
 
   await logActivity({
     action: "UPDATE_BLOG",
@@ -175,15 +173,8 @@ exports.deleteBlog = asyncHandler(async (req, res) => {
 
   const blogTitle = blog.title;
 
-  if (blog.coverImage?.public_id) {
-    try {
-      await cloudinary.uploader.destroy(blog.coverImage.public_id);
-    } catch (err) {
-      console.warn("Cloudinary destroy skipped:", err.message);
-    }
-  }
-
   await blog.deleteOne();
+  await safelyDestroyAsset(blog.coverImage?.public_id);
 
   await logActivity({
     action: "DELETE_BLOG",

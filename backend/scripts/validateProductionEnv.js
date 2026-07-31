@@ -1,4 +1,4 @@
-const required = ["MONGO_URI", "JWT_SECRET", "FRONTEND_URL", "BACKEND_PUBLIC_URL"];
+const required = ["MONGO_URI", "JWT_SECRET", "FRONTEND_URL"];
 const uploadRequired = [
   "CLOUDINARY_CLOUD_NAME",
   "CLOUDINARY_API_KEY",

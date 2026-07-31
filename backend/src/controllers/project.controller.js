@@ -1,22 +1,16 @@
 const asyncHandler = require("express-async-handler");
 const Project = require("../models/project.model");
 const uploadToCloudinary = require("../utils/uploadToCloudinary");
-const cloudinary = require("../config/cloudinary");
+const {
+  replaceCloudinaryAsset,
+  safelyDestroyAsset,
+} = require("../utils/replaceCloudinaryAsset");
+const {
+  cleanText,
+  parseBoolean,
+  parseTags,
+} = require("../utils/contentFields");
 const logActivity = require("../utils/logActivity");
-
-const parseTags = (tags) => {
-  if (!tags) return [];
-  if (Array.isArray(tags)) return tags;
-
-  try {
-    return JSON.parse(tags);
-  } catch {
-    return tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-  }
-};
 
 exports.getProjects = asyncHandler(async (req, res) => {
   const projects = await Project.find().sort({ featured: -1, createdAt: -1 }).limit(100).lean();
@@ -42,18 +36,24 @@ exports.createProject = asyncHandler(async (req, res) => {
     "image",
   );
 
-  const project = await Project.create({
-    title,
-    desc,
-    image: {
-      url: result.secure_url,
-      public_id: result.public_id,
-    },
-    tags: parseTags(tags),
-    live,
-    github,
-    featured: featured === "true" || featured === true,
-  });
+  let project;
+  try {
+    project = await Project.create({
+      title: cleanText(title),
+      desc: cleanText(desc),
+      image: {
+        url: result.secure_url,
+        public_id: result.public_id,
+      },
+      tags: parseTags(tags),
+      live: cleanText(live),
+      github: cleanText(github),
+      featured: parseBoolean(featured),
+    });
+  } catch (error) {
+    await safelyDestroyAsset(result.public_id);
+    throw error;
+  }
 
   await logActivity({
     action: "CREATE_PROJECT",
@@ -75,38 +75,27 @@ exports.updateProject = asyncHandler(async (req, res) => {
     throw new Error("Project not found");
   }
 
-  project.title = title || project.title;
-  project.desc = desc || project.desc;
-  project.tags = tags ? parseTags(tags) : project.tags;
-  project.live = live !== undefined ? live : project.live;
-  project.github = github !== undefined ? github : project.github;
-  project.featured =
-    featured !== undefined
-      ? featured === "true" || featured === true
-      : project.featured;
+  if (title !== undefined) project.title = cleanText(title);
+  if (desc !== undefined) project.desc = cleanText(desc);
+  if (tags !== undefined) project.tags = parseTags(tags);
+  if (live !== undefined) project.live = cleanText(live);
+  if (github !== undefined) project.github = cleanText(github);
+  if (featured !== undefined) project.featured = parseBoolean(featured);
 
   if (req.file) {
-    if (project.image?.public_id) {
-      try {
-        await cloudinary.uploader.destroy(project.image.public_id);
-      } catch (err) {
-        console.warn("Cloudinary destroy skipped:", err.message);
-      }
-    }
-
-    const result = await uploadToCloudinary(
-      req.file.buffer,
-      "portfolio/projects",
-      "image",
-    );
-
-    project.image = {
-      url: result.secure_url,
-      public_id: result.public_id,
-    };
+    const previousAsset = project.image?.toObject?.() || project.image;
+    await replaceCloudinaryAsset({
+      fileBuffer: req.file.buffer,
+      folder: "portfolio/projects",
+      previousAsset,
+      persistAsset: async (nextAsset) => {
+        project.image = nextAsset;
+        await project.save();
+      },
+    });
+  } else {
+    await project.save();
   }
-
-  await project.save();
 
   await logActivity({
     action: "UPDATE_PROJECT",
@@ -128,15 +117,8 @@ exports.deleteProject = asyncHandler(async (req, res) => {
 
   const projectTitle = project.title;
 
-  if (project.image?.public_id) {
-    try {
-      await cloudinary.uploader.destroy(project.image.public_id);
-    } catch (err) {
-      console.warn("Cloudinary destroy skipped:", err.message);
-    }
-  }
-
   await project.deleteOne();
+  await safelyDestroyAsset(project.image?.public_id);
 
   await logActivity({
     action: "DELETE_PROJECT",

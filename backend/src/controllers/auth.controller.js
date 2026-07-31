@@ -1,7 +1,9 @@
 const asyncHandler = require("express-async-handler");
-const uploadToCloudinary = require("../utils/uploadToCloudinary");
 const User = require("../models/user.model");
 const sendToken = require("../utils/sendToken");
+const {
+  replaceCloudinaryAsset,
+} = require("../utils/replaceCloudinaryAsset");
 
 const normalizeEmail = (email = "") => email.toString().trim().toLowerCase();
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -84,11 +86,20 @@ exports.updateProfile = asyncHandler(async (req, res) => {
   };
 
   if (req.file) {
-    const result = await uploadToCloudinary(req.file.buffer, "portfolio/avatar", "image");
-    user.avatar = { url: result.secure_url, public_id: result.public_id };
+    const previousAsset = user.avatar?.toObject?.() || user.avatar;
+    await replaceCloudinaryAsset({
+      fileBuffer: req.file.buffer,
+      folder: "portfolio/avatar",
+      previousAsset,
+      persistAsset: async (nextAsset) => {
+        user.avatar = nextAsset;
+        await user.save();
+      },
+    });
+  } else {
+    await user.save();
   }
 
-  await user.save();
   res.json({ success: true, message: "Profile updated successfully", user });
 });
 

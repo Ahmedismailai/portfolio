@@ -7,7 +7,7 @@ const {
   deleteTestimonial,
 } = require("../controllers/testimonial.controller");
 
-const upload = require("../middleware/upload.middleware");
+const { imageUpload } = require("../middleware/upload.middleware");
 
 const {
   isAuthenticated,
@@ -22,7 +22,7 @@ router.post(
   "/",
   isAuthenticated,
   authorizeRoles("admin"),
-  upload.single("image"),
+  imageUpload.single("image"),
   createTestimonial,
 );
 
@@ -30,7 +30,7 @@ router.put(
   "/:id",
   isAuthenticated,
   authorizeRoles("admin"),
-  upload.single("image"),
+  imageUpload.single("image"),
   updateTestimonial,
 );
 

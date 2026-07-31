@@ -54,6 +54,17 @@ const allowedOrigins = Array.from(
   ]),
 );
 
+const corsOrigin = (origin, callback) => {
+  if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ""))) {
+    callback(null, true);
+    return;
+  }
+
+  const error = new Error("Origin is not allowed");
+  error.statusCode = 403;
+  callback(error);
+};
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -62,7 +73,7 @@ app.use(
 app.use(compression());
 app.use(
   cors({
-    origin: true,
+    origin: corsOrigin,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],

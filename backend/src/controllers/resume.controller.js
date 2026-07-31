@@ -1,7 +1,9 @@
 const asyncHandler = require("express-async-handler");
 const Resume = require("../models/resume.model");
-const cloudinary = require("../config/cloudinary");
-const uploadToCloudinary = require("../utils/uploadToCloudinary");
+const {
+  replaceCloudinaryAsset,
+  safelyDestroyAsset,
+} = require("../utils/replaceCloudinaryAsset");
 
 exports.getResume = asyncHandler(async (req, res) => {
   const resume = await Resume.findOne().sort({ createdAt: -1 }).lean();
@@ -21,26 +23,18 @@ exports.uploadResume = asyncHandler(async (req, res) => {
   }
 
   const oldResume = await Resume.findOne();
+  const resume = oldResume || new Resume();
+  const previousAsset = resume.file?.toObject?.() || resume.file;
+  resume.title = title?.toString().trim() || "My Resume";
 
-  if (oldResume?.file?.public_id) {
-    await cloudinary.uploader.destroy(oldResume.file.public_id, {
-      resource_type: "raw",
-    });
-
-    await oldResume.deleteOne();
-  }
-
-  const result = await uploadToCloudinary(
-    req.file.buffer,
-    "portfolio/resume",
-    "raw",
-  );
-
-  const resume = await Resume.create({
-    title: title || "My Resume",
-    file: {
-      url: result.secure_url,
-      public_id: result.public_id,
+  await replaceCloudinaryAsset({
+    fileBuffer: req.file.buffer,
+    folder: "portfolio/resume",
+    previousAsset,
+    resourceType: "raw",
+    persistAsset: async (nextAsset) => {
+      resume.file = nextAsset;
+      await resume.save();
     },
   });
 
@@ -59,11 +53,8 @@ exports.deleteResume = asyncHandler(async (req, res) => {
     throw new Error("Resume not found");
   }
 
-  await cloudinary.uploader.destroy(resume.file.public_id, {
-    resource_type: "raw",
-  });
-
   await resume.deleteOne();
+  await safelyDestroyAsset(resume.file.public_id, undefined, "raw");
 
   res.json({
     success: true,

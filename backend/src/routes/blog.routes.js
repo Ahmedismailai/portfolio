@@ -9,7 +9,7 @@ const {
   deleteBlog,
 } = require("../controllers/blog.controller");
 
-const upload = require("../middleware/upload.middleware");
+const { imageUpload } = require("../middleware/upload.middleware");
 
 const {
   isAuthenticated,
@@ -26,7 +26,7 @@ router.post(
   "/",
   isAuthenticated,
   authorizeRoles("admin"),
-  upload.single("coverImage"),
+  imageUpload.single("coverImage"),
   createBlog,
 );
 
@@ -34,7 +34,7 @@ router.put(
   "/:id",
   isAuthenticated,
   authorizeRoles("admin"),
-  upload.single("coverImage"),
+  imageUpload.single("coverImage"),
   updateBlog,
 );
 

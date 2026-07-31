@@ -39,11 +39,7 @@ export default function ResumePage() {
       formData.append("title", title);
       formData.append("resume", file);
 
-      await API.post("/resume", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      await API.post("/resume", formData);
 
       getResume();
       setFile(null);
@@ -98,7 +94,7 @@ export default function ResumePage() {
 
           <input
             type="file"
-            accept=".pdf,.doc,.docx"
+            accept=".pdf,application/pdf"
             onChange={(e) => setFile(e.target.files[0])}
             className="rounded-2xl border border-black/10 bg-white px-5 py-4 dark:border-white/10 dark:bg-[#0b1424] dark:text-white"
           />

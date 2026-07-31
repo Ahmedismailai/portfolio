@@ -6,7 +6,7 @@ const {
   deleteResume,
 } = require("../controllers/resume.controller");
 
-const upload = require("../middleware/upload.middleware");
+const { resumeUpload } = require("../middleware/upload.middleware");
 
 const {
   isAuthenticated,
@@ -21,7 +21,7 @@ router.post(
   "/",
   isAuthenticated,
   authorizeRoles("admin"),
-  upload.single("resume"),
+  resumeUpload.single("resume"),
   uploadResume,
 );
 
