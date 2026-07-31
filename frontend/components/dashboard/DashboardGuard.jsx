@@ -1,0 +1,66 @@
+"use client";
+
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import API from "@/lib/axios";
+
+const DashboardAuthContext = createContext({ user: null, refreshUser: async () => {} });
+
+export const useDashboardAuth = () => useContext(DashboardAuthContext);
+
+export default function DashboardGuard({ children }) {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data } = await API.get("/auth/me");
+      if (data?.user) {
+        setUser(data.user);
+        return data.user;
+      }
+    } catch {
+      // Fallback: direct fetch to same-origin /api/backend/auth/me
+    }
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    const headers = { Accept: "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await fetch("/api/backend/auth/me", { headers });
+    const data = await res.json();
+    if (res.ok && data?.user) {
+      setUser(data.user);
+      return data.user;
+    }
+    throw new Error("Unauthorized");
+  }, []);
+
+  useEffect(() => {
+    refreshUser()
+      .catch(async () => {
+        try {
+          await API.post("/auth/logout");
+        } catch {
+          // The redirect still clears access to protected dashboard data.
+        }
+        router.replace("/login");
+      })
+      .finally(() => setLoading(false));
+  }, [refreshUser, router]);
+
+  const value = useMemo(() => ({ user, refreshUser }), [refreshUser, user]);
+
+  if (loading) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-white text-violet-600 dark:bg-[#030712] dark:text-violet-300">
+        <div className="flex items-center gap-3 font-bold"><Loader2 className="animate-spin" /> Checking session…</div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+  return <DashboardAuthContext.Provider value={value}>{children}</DashboardAuthContext.Provider>;
+}
